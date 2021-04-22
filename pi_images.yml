@@ -1,0 +1,10 @@
+---
+# Playbook for node img preparation
+
+- hosts: localhost
+
+  tasks:
+  - name: Prepare images
+    import_role:
+      name: role-prep_pi_images
+    become: yes

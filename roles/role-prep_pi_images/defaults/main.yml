@@ -1,0 +1,14 @@
+---
+# defaults file for role-prep_pi_images
+
+hypriot_version: "1.12.3"
+hypriot_isomount: "/tmp/hypriotos"
+hypriot_partitions:
+  - name: "boot"
+    pname: "p1"
+    fstype: "vfat"
+    fsopts: "rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro"
+  - name: "root"
+    pname: "p2"
+    fstype: "ext4"
+    fsopts: "rw,relatime"

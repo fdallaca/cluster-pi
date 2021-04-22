@@ -1,0 +1,7 @@
+---
+# vars file for franzernets cluster environment
+
+cluster_nodenumber: 1
+cluster_name: franzernetes
+cluster_network: 10.100.1.64/29
+cluster_gateway: 10.100.1.1
