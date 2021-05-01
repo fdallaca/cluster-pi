@@ -1,0 +1,10 @@
+version: 1
+config:
+  - type: physical
+    name: eth0
+    subnets:
+      - type: static
+        address: {{ cluster_network | ipmath(cluster_nodenumber_item | int ) }}
+        gateway: {{ cluster_gateway }}
+        dns_nameservers: {{ cluster_dns }}
+        dns_search: {{ cluster_dns_search }}

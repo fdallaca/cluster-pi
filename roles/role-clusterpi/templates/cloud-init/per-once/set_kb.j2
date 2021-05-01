@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Set the keyboard to US, don't set any modifier keys, etc.
+cp /etc/default/keyboard /etc/default/keyboard.dist
+sed -i -e "/XKBLAYOUT=/s/gb/{{ cluster_console_keyboard }}/" /etc/default/keyboard
+service keyboard-setup restart

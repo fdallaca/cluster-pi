@@ -1,0 +1,23 @@
+---
+# tasks file for role-prep_pi_images
+
+- name: Enforce directories (mountpoints)
+  file:
+    path: "{{ pios64_isomount }}_{{ cluster_nodenumber_item }}/{{ item.name }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ pios64_partitions }}"
+
+- debug:
+    var: loop_devices
+
+- name: Mount loop devices
+  mount:
+    path: "{{ pios64_isomount }}_{{ cluster_nodenumber_item }}/{{ item.name }}"
+    src: "{{ loop_devices.results[cluster_nodenumber_item | int - 1].stdout }}{{ item.pname }}"
+    fstype: "{{ item.fstype }}"
+    opts: "{{ item.fsopts }}"
+    state: "mounted"
+  loop: "{{ pios64_partitions }}"
+  register: mounted_partitions
+  notify: destroy_loop_devices

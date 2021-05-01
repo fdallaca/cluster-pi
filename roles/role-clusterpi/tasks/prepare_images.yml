@@ -1,0 +1,65 @@
+---
+# tasks file for role-prep_pi_images
+
+# Load needed environment vars (please create your own)
+- name: Load "{{ cluster_environment }}" needed vars
+  include_vars: "{{ cluster_environment }}.yml"
+
+- name: Create destination
+  copy:
+    src: "images/in/{{ pios64_image }}"
+    dest: "images/out/{{ cluster_name }}{{ '%02d' % item | int }}.img"
+    owner: root
+    group: root
+    mode: '0755'
+  with_sequence: count="{{ cluster_nodenumber | int }}"
+
+- name: Create loop devices
+  command:
+    argv:
+      - losetup
+      - --show
+      - -f
+      - -P
+      - "images/out/{{ cluster_name }}{{ '%02d' % item | int }}.img"
+  with_sequence: count="{{ cluster_nodenumber | int }}"
+  register: loop_devices
+  notify: umount_loop_devices
+
+- debug:
+    var: loop_devices
+
+# - set_fact:
+#     loop_device: "{{ loop_devices.results[0].stdout }}"
+
+- name: Mount loop devices
+  include_tasks: prepare_images/mounter.yml
+  with_sequence: count="{{ cluster_nodenumber | int }}"
+  loop_control:
+    loop_var: cluster_nodenumber_item
+
+- debug:
+    var: mounted_partitions
+
+- debug:
+    var: loop_devices
+
+# - set_fact:
+#      debuggami: "{{ loop_devices | selectattr('changed', 'equalto', true) | map(attribute='item') | map(attribute='stdout')}}"
+#
+#
+# #
+# # - set_fact:
+# #     debuggami: "{{ mounted_partitions | selectattr('changed', 'equalto', true) | map(attribute='item') | map(attribute='name') | list }}"
+# #
+# - debug:
+#     var: debuggami
+# #
+# - meta: end_play
+
+# Place all files
+- name: Copy file and templates
+  include_tasks: prepare_images/copy_files.yml
+  with_sequence: count="{{ cluster_nodenumber | int }}"
+  loop_control:
+    loop_var: cluster_nodenumber_item

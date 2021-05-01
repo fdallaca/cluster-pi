@@ -1,0 +1,20 @@
+---
+# tasks file for role-prep_pi_images
+
+# Place all files
+- name: Place all file
+  copy:
+    src: "{{ item.name }}"
+    dest: "{{ pios64_isomount }}_{{ cluster_nodenumber_item }}/{{ item.dest }}"
+    mode: 0755
+  when: item.type == "file"
+  loop: "{{ prepare_image_files }}"
+
+# Place all templates
+- name: Place all template
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ pios64_isomount }}_{{ cluster_nodenumber_item }}/{{ item.dest }}"
+    mode: 0755
+  when: item.type == "template"
+  loop: "{{ prepare_image_files }}"

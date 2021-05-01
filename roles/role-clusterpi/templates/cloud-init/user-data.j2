@@ -3,27 +3,28 @@
 #
 
 # Set your hostname here, the manage_etc_hosts will update the hosts file entries as well
-hostname: black-pearl
+hostname: {{ cluster_name }}{{ '%02d' % item | int }}
 manage_etc_hosts: true
 
 # You could modify this for your own user information
 users:
-  - name: pirate
-    gecos: "Hypriot Pirate"
+  - name: clusterpi
+    gecos: "Cluster Pi administrator"
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     groups: users,docker,video,input
-    plain_text_passwd: hypriot
+    plain_text_passwd: {{ cluster_adm_pwd | default('clusterpi') }}
     lock_passwd: false
     ssh_pwauth: true
     chpasswd: { expire: false }
+    ssh_authorized_keys: {{ cluster_ssh_auth_keys | default([]) }}
 
 # # Set the locale of the system
-# locale: "en_US.UTF-8"
+#locale: "en_US.UTF-8"
 
 # # Set the timezone
 # # Value of 'timezone' must exist in /usr/share/zoneinfo
-# timezone: "America/Los_Angeles"
+timezone: {{ cluster_tz }}
 
 # # Update apt packages on first boot
 # package_update: true
@@ -32,8 +33,8 @@ users:
 package_upgrade: false
 
 # # Install any additional apt packages you need here
-# packages:
-#  - ntp
+packages:
+  - ntp
 
 # # WiFi connect to HotSpot
 # # - use `wpa_passphrase SSID PASSWORD` to encrypt the psk
@@ -62,6 +63,10 @@ package_upgrade: false
 runcmd:
   # Pickup the hostname changes
   - 'systemctl restart avahi-daemon'
+  - 'deluser -remove-home pi'
+  - 'systemctl disable apt-daily.timer'
+  - 'systemctl disable apt-daily-upgrade.timer'
+  - 'touch /etc/cloud/cloud-init.disabled'
 
 #  # Activate WiFi interface
 #  - 'ifup wlan0'

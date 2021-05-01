@@ -1,0 +1,10 @@
+---
+# Playbook for node img preparation
+
+- hosts: localhost
+
+  tasks:
+  - name: loop
+    debug:
+      msg: "{{ item | int + 1 }}"
+    with_sequence: count=5

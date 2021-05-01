@@ -1,0 +1,22 @@
+---
+# handlers file for role-prep_pi_images
+
+# [ prepare_images ] Handlers
+
+- name: Umount loop devices
+  loop: "{{ mounted_partitions.results | selectattr('changed', 'equalto', true) | map(attribute='name') | list }}"
+  mount:
+    path: "{{ item }}"
+    state: absent
+  listen: umount_loop_devices
+
+- name: Destroy loop device
+  loop: "{{ loop_devices.results | selectattr('changed', 'equalto', true) | map(attribute='stdout') | list }}"
+  command:
+    argv:
+      - losetup
+      - -d
+      - "{{ item }}"
+  listen: destroy_loop_devices
+
+###

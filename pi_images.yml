@@ -4,7 +4,7 @@
 - hosts: localhost
 
   tasks:
-  - name: Prepare images
+  - name: clusterpi main playbook
     import_role:
-      name: role-prep_pi_images
+      name: role-clusterpi
     become: yes

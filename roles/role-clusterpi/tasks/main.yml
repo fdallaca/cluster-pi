@@ -1,0 +1,29 @@
+---
+# tasks file for role-prep_pi_images
+
+- name: Prepare images
+  import_tasks: prepare_images.yml
+  tags:
+    - never
+    - prepare_images
+
+- name: Apply partitioning scheme
+  debug:
+    msg: "ToDo"
+  tags:
+    - never
+    - partitioning
+
+- name: Install docker
+  debug:
+    msg: "ToDo"
+  tags:
+    - never
+    - docker
+
+- name: Kubernetes requirements
+  debug:
+    msg: "ToDo"
+  tags:
+    - never
+    - kuebernetes

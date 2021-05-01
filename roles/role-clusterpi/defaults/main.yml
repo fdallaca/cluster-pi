@@ -1,0 +1,55 @@
+---
+# defaults file for role-prep_pi_images
+
+pios64_image: "2021-04-25-raspios-buster-arm64-lite.cloudinit.img"
+pios64_isomount: "/tmp/pios64"
+pios64_partitions:
+  - name: "boot"
+    pname: "p1"
+    fstype: "vfat"
+    fsopts: "rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro"
+  - name: "root"
+    pname: "p2"
+    fstype: "ext4"
+    fsopts: "rw,relatime"
+
+cluster_dns:
+  - 8.8.8.8
+  - 8.8.4.4
+cluster_dns_search:
+  - clusterpi.local
+cluster_console_keyboard: us
+cluster_tz: "Europe/Rome"
+
+prepare_image_files:
+  # useless because already present in my image... but is best remember this
+  - name: boot/ssh
+    type: file
+    dest: boot/ssh
+  - name: boot/cmdline.txt
+    type: file
+    dest: boot/cmdline.txt
+  - name: boot/config.txt
+    type: file
+    dest: boot/config.txt
+  - name: cloud-init/cloud.cfg
+    type: file
+    dest: root/etc/cloud/cloud.cfg
+  - name: cloud-init/per-once/regenerate-machine-id
+    type: file
+    dest: root/var/lib/cloud/scripts/per-once/regenerate-machine-id
+  - name: cloud-init/per-once/set_kb.j2
+    type: template
+    dest: root/var/lib/cloud/scripts/per-once/set_kb
+  - name: cloud-init/meta-data.j2
+    type: template
+    dest: root/var/lib/cloud/seed/nocloud-net/meta-data
+  - name: cloud-init/meta-data.j2
+    type: template
+    dest: root/var/lib/cloud/seed/nocloud-net/meta-data
+  - name: cloud-init/network-config.j2
+    type: template
+    dest: root/var/lib/cloud/seed/nocloud-net/network-config
+  - name: cloud-init/user-data.j2
+    type: template
+    dest: root/var/lib/cloud/seed/nocloud-net/user-data
