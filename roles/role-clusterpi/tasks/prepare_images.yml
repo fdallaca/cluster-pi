@@ -26,7 +26,8 @@
   register: loop_devices
   notify: umount_loop_devices
 
-- debug:
+- name: debug
+  debug:
     var: loop_devices
 
 # - set_fact:
@@ -38,10 +39,12 @@
   loop_control:
     loop_var: cluster_nodenumber_item
 
-- debug:
+- name: debug
+  debug:
     var: mounted_partitions
 
-- debug:
+- name: debug
+  debug:
     var: loop_devices
 
 # Place all files
