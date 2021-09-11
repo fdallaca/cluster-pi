@@ -3,7 +3,7 @@
 #
 
 # Set your hostname here, the manage_etc_hosts will update the hosts file entries as well
-hostname: {{ cluster_name }}{{ '%02d' % item | int }}
+hostname: {{ cluster_name }}{{ '%02d' % cluster_nodenumber_item | int }}
 manage_etc_hosts: true
 
 # You could modify this for your own user information

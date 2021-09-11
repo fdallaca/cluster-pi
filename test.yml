@@ -2,9 +2,13 @@
 # Playbook for node img preparation
 
 - hosts: localhost
-
+  vars:
+    cluster_nodenumber: 3 
+    
   tasks:
   - name: loop
     debug:
-      msg: "{{ item | int + 1 }}"
-    with_sequence: count=5
+      msg: "{{ '%02d' % cluster_nodenumber_item | int }}"
+    with_sequence: count="{{ cluster_nodenumber | int }}"
+    loop_control:
+      loop_var: cluster_nodenumber_item

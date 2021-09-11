@@ -10,6 +10,9 @@
   when: item.type == "file"
   loop: "{{ prepare_image_files }}"
 
+- debug:
+    msg: "{{ cluster_name }}{{ '%02d' % cluster_nodenumber_item | int }}"
+
 # Place all templates
 - name: Place all template
   template:

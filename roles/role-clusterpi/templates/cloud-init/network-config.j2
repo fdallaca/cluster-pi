@@ -5,6 +5,7 @@ config:
     subnets:
       - type: static
         address: {{ cluster_network | ipmath(cluster_nodenumber_item | int ) }}
+        netmask: {{ cluster_network | ipaddr('netmask') }}
         gateway: {{ cluster_gateway }}
         dns_nameservers: {{ cluster_dns }}
         dns_search: {{ cluster_dns_search }}

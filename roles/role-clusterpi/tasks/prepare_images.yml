@@ -44,19 +44,6 @@
 - debug:
     var: loop_devices
 
-# - set_fact:
-#      debuggami: "{{ loop_devices | selectattr('changed', 'equalto', true) | map(attribute='item') | map(attribute='stdout')}}"
-#
-#
-# #
-# # - set_fact:
-# #     debuggami: "{{ mounted_partitions | selectattr('changed', 'equalto', true) | map(attribute='item') | map(attribute='name') | list }}"
-# #
-# - debug:
-#     var: debuggami
-# #
-# - meta: end_play
-
 # Place all files
 - name: Copy file and templates
   include_tasks: prepare_images/copy_files.yml
