@@ -83,7 +83,7 @@ ansible-playbook cluster-pi/pi_configure.yml -i /public/clusterpi/inventory.yml 
 Possible tags (in this phase):
 - `partitioning`
    
-  Automatic storage partitioning (must be [enabled]() on build phase) This tag must be explicitly activate because is not included in `nodes_prereq` tag
+  Automatic storage partitioning (must be [enabled](./roles/role-clusterpi/README.md#Disk-related-variables) on build phase) This tag must be explicitly activate because is not included in `nodes_prereq` tag
 
 - `packages`
    
