@@ -1,0 +1,15 @@
+---
+# tasks file for role-clusterpi
+
+# Load needed environment vars (please create your own)
+- name: Load "{{ cluster_environment }}" needed vars
+  include_vars: "{{ cluster_environment }}.yml"
+  when:
+  - cluster_environment is defined   
+   
+# Use packer to burn images
+- name: Packer build of images
+  include_tasks: prepare_images/packer_build.yml
+  with_sequence: count="{{ cluster_nodenumber | int }}"
+  loop_control:
+    loop_var: cluster_nodenumber_item

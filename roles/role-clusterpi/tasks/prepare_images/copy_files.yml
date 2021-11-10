@@ -1,11 +1,24 @@
 ---
-# tasks file for role-prep_pi_images
+# tasks file for role-clusterpi
+
+# Ensure dirs
+- name: Ensure dir for output images
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ stage_dir }}/"
+    - "{{ stage_dir }}/{{ cluster_nodenumber_item }}"
+    - "{{ stage_dir }}/{{ cluster_nodenumber_item }}/boot"
+    - "{{ stage_dir }}/{{ cluster_nodenumber_item }}/boot/firmware"
+    - "{{ stage_dir }}/{{ cluster_nodenumber_item }}/root"
 
 # Place all files
 - name: Place all file
-  copy:
+  ansible.builtin.copy:
     src: "{{ item.name }}"
-    dest: "{{ pios64_isomount }}_{{ cluster_nodenumber_item }}/{{ item.dest }}"
+    dest: "{{ stage_dir }}/{{ cluster_nodenumber_item }}/{{ item.dest }}"
     mode: 0755
   when: item.type == "file"
   loop: "{{ prepare_image_files }}"
@@ -15,9 +28,15 @@
 
 # Place all templates
 - name: Place all template
-  template:
+  ansible.builtin.template:
     src: "{{ item.name }}"
-    dest: "{{ pios64_isomount }}_{{ cluster_nodenumber_item }}/{{ item.dest }}"
+    dest: "{{ stage_dir }}/{{ cluster_nodenumber_item }}/{{ item.dest }}"
     mode: 0755
   when: item.type == "template"
   loop: "{{ prepare_image_files }}"
+
+- name: Create packer json specifier
+  ansible.builtin.template:
+    src: "packer-builder-arm/{{ pios64_image.packer_template }}"
+    dest: "{{ stage_dir }}/{{ cluster_nodenumber_item }}/{{ pios64_image.packer_template | replace('.j2','') }}"
+    mode: '0644'

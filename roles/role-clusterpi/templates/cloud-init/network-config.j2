@@ -1,11 +1,12 @@
-version: 1
-config:
-  - type: physical
-    name: eth0
-    subnets:
-      - type: static
-        address: {{ cluster_network | ipmath(cluster_nodenumber_item | int ) }}
-        netmask: {{ cluster_network | ipaddr('netmask') }}
-        gateway: {{ cluster_gateway }}
-        dns_nameservers: {{ cluster_dns }}
-        dns_search: {{ cluster_dns_search }}
+version: 2
+ethernets:
+  eth0:
+    dhcp4: false
+    dhcp6: false
+    addresses:
+    - {{ cluster_cidr_firstip | ansible.netcommon.ipmath(cluster_nodenumber_item | int - 1) }}/{{ cluster_cidr_firstip | ansible.netcommon.ipaddr('prefix') }}
+    gateway4: {{ cluster_gateway }}
+    nameservers:
+      search: {{ cluster_dns_search }}
+      addresses: {{ cluster_dns }}
+

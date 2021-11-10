@@ -1,0 +1,86 @@
+---
+
+# Load needed environment vars (please create your own)
+- name: Load "{{ cluster_environment }}" needed vars
+  include_vars: "{{ cluster_environment }}.yml"
+  when:
+  - cluster_environment is defined   
+
+# Permanently remove useless snapd and multipathd-tools
+- name: Uninstall snapd
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: absent
+    purge: true
+  loop:
+    - snapd
+    - multipath-tools
+    - docker
+    - docker-engine
+    - docker.io
+    - containerd
+    - runc
+
+- name: Remove useless snapd dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /snap 
+    - /var/snap 
+    - /var/lib/snapd 
+    - /var/cache/snapd 
+    - /usr/lib/snapd
+    - /root/snap
+
+- name: Prevent future snapd installation
+  ansible.builtin.copy:
+    src: no-snap.pref
+    dest: /etc/apt/preferences.d/no-snap.pref
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update system
+  ansible.builtin.apt:
+    upgrade: safe
+    update_cache: true
+    autoclean: true
+    autoremove: true
+    state: latest
+  notify:
+    - updated
+
+- name: Reboot if updated
+  meta: flush_handlers
+
+- name: Install default packages
+  ansible.builtin.apt:
+    state: latest
+    name: "{{ item }}"
+    update_cache: true
+    autoclean: true
+    autoremove: true   
+  loop: "{{ k8s_default_packages }}"
+
+# Install Docker CE version
+- name: Add Docker official gpg key
+  ansible.builtin.apt_key:
+    keyring: /usr/share/keyrings/docker-archive-keyring.gpg
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Install Docker packages
+  ansible.builtin.apt:
+    state: latest
+    name: "{{ item }}"
+    update_cache: true
+    autoclean: true
+    autoremove: true
+  loop: "{{ docker_packages }}"

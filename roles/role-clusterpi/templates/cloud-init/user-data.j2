@@ -1,14 +1,29 @@
 #cloud-config
-# vim: syntax=yaml
+
+# This is the user-data configuration file for cloud-init. By default this sets
+# up an initial user called "ubuntu" with password "ubuntu", which must be
+# changed at first login. However, many additional actions can be initiated on
+# first boot from this file. The cloud-init documentation has more details:
 #
+# https://cloudinit.readthedocs.io/
+#
+# Some additional examples are provided in comments below the default
+# configuration.
 
 # Set your hostname here, the manage_etc_hosts will update the hosts file entries as well
 hostname: {{ cluster_name }}{{ '%02d' % cluster_nodenumber_item | int }}
 manage_etc_hosts: true
 
+# On first boot, set the (default) ubuntu user's password to "ubuntu" and
+# expire user passwords
+# chpasswd:
+#  expire: true
+#  list:
+#  - ubuntu:ubuntu
+
 # You could modify this for your own user information
 users:
-  - name: clusterpi
+  - name: {{ cluster_adm_user }}
     gecos: "Cluster Pi administrator"
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
@@ -19,54 +34,66 @@ users:
     chpasswd: { expire: false }
     ssh_authorized_keys: {{ cluster_ssh_auth_keys | default([]) }}
 
-# # Set the locale of the system
-#locale: "en_US.UTF-8"
-
 # # Set the timezone
 # # Value of 'timezone' must exist in /usr/share/zoneinfo
 timezone: {{ cluster_tz }}
 
-# # Update apt packages on first boot
-# package_update: true
-# package_upgrade: true
-# package_reboot_if_required: true
-package_upgrade: false
+# Enable password authentication with the SSH daemon
+ssh_pwauth: true
 
-# # Install any additional apt packages you need here
+## On first boot, use ssh-import-id to give the specific users SSH access to
+## the default user
+#ssh_import_id:
+#- lp:my_launchpad_username
+#- gh:my_github_username
+
+## Add users and groups to the system, and import keys with the ssh-import-id
+## utility
+#groups:
+#- robot: [robot]
+#- robotics: [robot]
+#- pi
+#
+#users:
+#- default
+#- name: robot
+#  gecos: Mr. Robot
+#  primary_group: robot
+#  groups: users
+#  ssh_import_id: foobar
+#  lock_passwd: false
+#  passwd: $5$hkui88$nvZgIle31cNpryjRfO9uArF7DYiBcWEnjqq7L1AQNN3
+
+## Update apt database and upgrade packages on first boot
+#package_update: true
+#package_upgrade: true
+
+## Install additional packages on first boot
 packages:
   - ntp
 
-# # WiFi connect to HotSpot
-# # - use `wpa_passphrase SSID PASSWORD` to encrypt the psk
-# write_files:
-#   - content: |
-#       allow-hotplug wlan0
-#       iface wlan0 inet dhcp
-#       wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
-#       iface default inet dhcp
-#     path: /etc/network/interfaces.d/wlan0
-#   - content: |
-#       country=de
-#       ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-#       update_config=1
-#       network={
-#       ssid="YOUR_WIFI_SSID"
-#       psk="YOUR_WIFI_PASSWORD"
-#       proto=RSN
-#       key_mgmt=WPA-PSK
-#       pairwise=CCMP
-#       auth_alg=OPEN
-#       }
-#     path: /etc/wpa_supplicant/wpa_supplicant.conf
+## Write arbitrary files to the file-system (including binaries!)
+#write_files:
+#- path: /etc/default/keyboard
+#  content: |
+#    # KEYBOARD configuration file
+#    # Consult the keyboard(5) manual page.
+#    XKBMODEL="pc105"
+#    XKBLAYOUT="gb"
+#    XKBVARIANT=""
+#    XKBOPTIONS="ctrl: nocaps"
+#  permissions: '0644'
+#  owner: root:root
+#- encoding: gzip
+#  path: /usr/bin/hello
+#  content: !!binary |
+#    H4sIAIDb/U8C/1NW1E/KzNMvzuBKTc7IV8hIzcnJVyjPL8pJ4QIA6N+MVxsAAAA=
+#  owner: root:root
+#  permissions: '0755'
 
-# These commands will be ran once on first boot only
+## Run arbitrary commands at rc.local like time
 runcmd:
-  # Pickup the hostname changes
-  - 'systemctl restart avahi-daemon'
-  - 'deluser -remove-home pi'
+  # Disable unattended upgrade
   - 'systemctl disable apt-daily.timer'
   - 'systemctl disable apt-daily-upgrade.timer'
   - 'touch /etc/cloud/cloud-init.disabled'
-
-#  # Activate WiFi interface
-#  - 'ifup wlan0'

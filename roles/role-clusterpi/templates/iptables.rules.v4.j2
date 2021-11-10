@@ -1,0 +1,36 @@
+###########
+## IPTABLES FIREWALL CONFIGURATION
+###########
+
+*filter
+
+##ALLOW loopback interface
+-A INPUT -i lo -j ACCEPT
+
+##ALLOW connections that originate from this server
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A OUTPUT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+
+##Block
+-A INPUT -s 61.225.15.0/24 -j DROP
+-A INPUT -s 118.167.0.0/16 -j DROP
+-A INPUT -s 114.45.0.0/16 -j DROP
+-A INPUT -s 121.96.0.0/18 -j DROP
+
+##ALLOW specific to the following ports
+{% for rule in k8s_fw_rules %}-A INPUT -p {{ rule.protocol }} --dport {{ rule.port }} -j ACCEPT
+{% endfor %}
+
+##ALLOW icmp
+-A INPUT -p icmp --icmp-type echo-request -m limit --limit 20/s --limit-burst 5 -j ACCEPT
+
+##LOGGING
+-A INPUT -j LOG -m limit --limit 2/min --log-prefix "IPTables-INPUT-Drop: " --log-ip-options --log-tcp-options
+
+##DEFAULT set DROP as default rule for each chain
+-P INPUT DROP
+-P FORWARD DROP
+-P OUTPUT DROP
+
+COMMIT

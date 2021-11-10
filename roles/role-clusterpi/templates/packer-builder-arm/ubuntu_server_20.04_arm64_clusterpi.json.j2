@@ -1,0 +1,62 @@
+{
+  "variables": {},
+  "builders": [{
+    "type": "arm",
+    "file_urls" : ["file:/image/{{ pios64_image.path }}"],
+    "file_checksum_url": "{{ pios64_image.checksum }}",
+    "file_checksum_type": "{{ pios64_image.checksum_type }}",
+    "file_target_extension": "{{ pios64_image.type }}",
+    "file_unarchive_cmd": {{ pios64_image.unarchive_cmd | list | to_json }},
+    "image_build_method": "reuse",
+    "image_path": "{{ cluster_name }}{{ '%02d' % cluster_nodenumber_item | int }}.img",
+    "image_size": "3.1G",
+    "image_type": "dos",
+    "image_partitions": [
+      {
+        "name": "boot",
+        "type": "c",
+        "start_sector": "2048",
+        "filesystem": "fat",
+        "size": "256M",
+        "mountpoint": "/boot/firmware"
+      },
+      {
+        "name": "root",
+        "type": "83",
+        "start_sector": "526336",
+        "filesystem": "ext4",
+        "size": "2.8G",
+        "mountpoint": "/"
+      }
+
+    ],
+    "image_chroot_env": ["PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"],
+    "qemu_binary_source_path": "/usr/bin/qemu-aarch64-static",
+    "qemu_binary_destination_path": "/usr/bin/qemu-aarch64-static"
+  }],
+  "provisioners": [
+    {# Address the resolver chrooted env problem #}
+    {
+      "type": "shell",
+      "inline": [
+        "mv /etc/resolv.conf /etc/resolv.conf.bk",
+        "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
+      ]
+    },
+    {# Decompress kernel (usb_storage: true case) #}
+    {
+      "type": "shell",
+      "inline": [
+        "zcat /boot/firmware/vmlinuz > /boot/firmware/vmlinux"
+      ]
+    },
+    {% for item in prepare_image_files %}
+    {
+      "type": "file",
+      "source": "{{ item.dest }}",
+      "destination": "/{{ item.dest | regex_replace('^root/') | replace(':','/') }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "post-processors": []
+}

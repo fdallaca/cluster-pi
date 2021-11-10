@@ -1,2 +1,5 @@
 *.img
-test.yml
+*.gz
+*.xz
+venv/
+franzernetes.yml

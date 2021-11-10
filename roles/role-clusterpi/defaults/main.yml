@@ -1,18 +1,25 @@
 ---
-# defaults file for role-prep_pi_images
+# defaults file for role-clusterpi
 
-pios64_image: "2021-04-25-raspios-buster-arm64-lite.cloudinit.img"
-pios64_isomount: "/tmp/pios64"
-pios64_partitions:
-  - name: "boot"
-    pname: "p1"
-    fstype: "vfat"
-    fsopts: "rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro"
-  - name: "root"
-    pname: "p2"
-    fstype: "ext4"
-    fsopts: "rw,relatime"
+stage_dir: "/tmp/cluster-pi"
+images_in_path: "/tmp/cluster-pi"
+images_out_path: "images/out"
 
+# You can override this...
+pios64_image:
+  path: "images/in/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz"
+  checksum: "http://cdimage.ubuntu.com/releases/20.04.3/release/SHA256SUMS"
+  checksum_type: "sha256"
+  packer_template: "ubuntu_server_20.04_arm64_clusterpi.json.j2"
+  type: "xz"
+  unarchive_cmd: 
+    - "xz"
+    - "--decompress"
+    - "$ARCHIVE_PATH"
+    
+cluster_adm_user: clusterpi
+cluster_adm_pwd: change_me
+cluster_ssh_auth_keys: []
 cluster_dns:
   - 8.8.8.8
   - 8.8.4.4
@@ -20,36 +27,131 @@ cluster_dns_search:
   - clusterpi.local
 cluster_console_keyboard: us
 cluster_tz: "Europe/Rome"
+cluster_name: clusterpi
+cluster_cidr_firstip: 192.168.1.65/24
+cluster_gateway: 192.168.1.1
+cluster_nodenumber: 1 # Default one node... overwrite this if you want...
+master_nodenumber: 1 # Used only for group nodes in inventory...
+
+# DISK SECTION #
+
+# Following parameter serve to enable usb_storage pi4 support
+usb_storage: false
+sd_device: "/dev/mmcblk0"
+#
+# It must be switched (in environment section) to:
+# usb_storage: true
+# sd_device: "/dev/sda"
+#
+# As default use growpart and resizefs cloudinit module
+# 
+# If you want to do custom partition or using tag "partitioning"
+# set "partitioning: true" in environment files
+partitioning: false
+#
+# Partition (using "partitioning" tag) is thinked in a tre-scheme partitions of pi sdcard:
+# 1 - boot partition (derived from ubuntu stock)
+# 2 - root partition (derived from ubuntu stock)
+# 3 - pv partition 
+# Partitioning must activated by dedicated tag ("partitioning"): feel free to skip for manual partitioning if
+# interested in other schemes
+# Space for partition dedicated for phisical volumes for etcd on master... (in GiB parted units)
+etcd_size_gib: 10
+# And on workers (to use with an object storage like min.io)
+pv_size_gib: 16
 
 prepare_image_files:
-  # useless because already present in my image... but is best remember this
-  - name: boot/ssh
+  - name: boot/cmdline.docker.txt
     type: file
-    dest: boot/ssh
-  - name: boot/cmdline.txt
+    dest: boot/firmware/cmdline.txt
+  - name: boot/auto_decompress_kernel
     type: file
-    dest: boot/cmdline.txt
-  - name: boot/config.txt
+    dest: boot/firmware/auto_decompress_kernel
+  - name: boot/999_decompress_rpi_kernel
     type: file
-    dest: boot/config.txt
-  - name: cloud-init/cloud.cfg
-    type: file
-    dest: root/etc/cloud/cloud.cfg
-  - name: cloud-init/per-once/regenerate-machine-id
-    type: file
-    dest: root/var/lib/cloud/scripts/per-once/regenerate-machine-id
-  - name: cloud-init/per-once/set_kb.j2
+    dest: root/etc:apt:apt.conf.d:999_decompress_rpi_kernel
+  - name: cloud-init/usercfg.txt.j2
     type: template
-    dest: root/var/lib/cloud/scripts/per-once/set_kb
+    dest: boot/firmware/usercfg.txt
+  - name: cloud-init/cloud.cfg.j2
+    type: template
+    dest: root/etc:cloud:cloud.cfg
   - name: cloud-init/meta-data.j2
     type: template
-    dest: root/var/lib/cloud/seed/nocloud-net/meta-data
-  - name: cloud-init/meta-data.j2
-    type: template
-    dest: root/var/lib/cloud/seed/nocloud-net/meta-data
+    dest: boot/firmware/meta-data
   - name: cloud-init/network-config.j2
     type: template
-    dest: root/var/lib/cloud/seed/nocloud-net/network-config
+    dest: boot/firmware/network-config
   - name: cloud-init/user-data.j2
     type: template
-    dest: root/var/lib/cloud/seed/nocloud-net/user-data
+    dest: boot/firmware/user-data
+
+k8s_packages:
+- kubelet
+- kubeadm
+- kubectl
+# Latest k8s major 1 version available to distro
+k8s_version: "1.*"
+
+docker_packages:
+- docker-ce
+- docker-ce-cli
+- containerd.io
+
+k8s_default_packages:
+- gnupg
+# LEGACY for kube-proxy compatibility
+- iptables-persistent
+- arptables
+- ebtables
+#
+- net-tools
+- dstat
+- apt-transport-https
+- ca-certificates
+- curl
+- bash-completion
+- rpi-eeprom
+
+k8s_modules:
+- br_netfilter
+
+# Firewall rules (differentiated for masters&workers)
+# iptables rules syntax!
+k8s_masters_fw_rules:
+- port: "22" # ssh
+  protocol: tcp
+- port: "80" # Proxy service
+  protocol: tcp
+- port: "443" # Proxy service
+  protocol: tcp
+- port: "6443"  # kube-apiserver
+  protocol: tcp
+- port: "6781:6783"  # weave-net cni (metrics&control path)
+  protocol: tcp
+- port: "6783:6784"  # weave-net cni (data path)
+  protocol: udp
+# Other port needed for multimaster setup!
+- port: "2379:2380" # etcd server/client API (not necessary if single master)
+  protocol: tcp
+- port: "10250" # kubelet API (not necessary if single master)
+  protocol: tcp
+
+k8s_workers_fw_rules:
+- port: "22" # ssh
+  protocol: tcp
+- port: "80" # Proxy service
+  protocol: tcp
+- port: "443" # Proxy service
+  protocol: tcp
+- port: "6781:6783"  # weave-net cni (metrics&control path)
+  protocol: tcp
+- port: "6783:6784"  # weave-net cni (data path)
+  protocol: udp
+- port: "10250" # kubelet API
+  protocol: tcp
+- port: "30000:32767" # Services (protocol TCP)
+  protocol: "tcp"
+- port: "30000:32767" # Services (protocol TCP)
+  protocol: "udp"
+

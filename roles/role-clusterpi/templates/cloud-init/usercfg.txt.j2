@@ -47,19 +47,17 @@
 #dtparam=i2s=on
 #dtparam=spi=on
 
-# Uncomment this to enable infrared communication.
-#dtoverlay=gpio-ir,gpio_pin=17
-#dtoverlay=gpio-ir-tx,gpio_pin=18
-
 # Additional overlays and parameters are documented /boot/overlays/README
-
-# Enable audio (loads snd_bcm2835)
-dtparam=audio=on
-
-# Enable DRM VC4 V3D drive
-dtoverlay=vc4-kms-v3d
-max_framebuffers=2
-arm_64bit=1
 
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
+
+[pi4]
+# Enable DRM VC4 V3D drive
+max_framebuffers=2
+dtoverlay=vc4-fkms-v3d
+{% if usb_storage | bool %}boot_delay
+kernel=vmlinux
+initramfs initrd.img followkernel
+{% else %}kernel=uboot_rpi_4.bin
+{% endif %}

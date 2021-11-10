@@ -1,29 +1,74 @@
 ---
 # tasks file for role-prep_pi_images
 
-- name: Prepare images
-  import_tasks: prepare_images.yml
+## Images preparations activities ##
+
+- name: Prepare files
+  import_tasks: prepare_images/prepare_files.yml
   tags:
     - never
     - prepare_images
+    - prepare_files
 
-- name: Apply partitioning scheme
-  debug:
-    msg: "ToDo"
+- name: Build images
+  import_tasks: prepare_images/prepare_images.yml
+  tags:
+    - never
+    - prepare_images
+    - build_images
+
+- name: Prepare an ansible inventory for nodes management
+  import_tasks: create_inventory.yml
+  tags:
+    - never
+    - prepare_images
+    - inventory
+
+## Nodes requirements configuration activities ##
+
+- name: Nodes partitioning
+  import_tasks: nodes_prereq/nodes_parts.yml
+  become: true
   tags:
     - never
     - partitioning
 
-- name: Install docker
-  debug:
-    msg: "ToDo"
+- name: Nodes packages install
+  import_tasks: nodes_prereq/packages.yml
+  become: true
   tags:
     - never
-    - docker
+    - nodes_prereq
+    - packages
 
-- name: Kubernetes requirements
-  debug:
-    msg: "ToDo"
+- name: Kubernetes needed requirements, configuration and specific packages
+  import_tasks: nodes_prereq/configuration.yml
+  become: true
   tags:
     - never
-    - kuebernetes
+    - nodes_prereq
+    - kubernetes
+
+- name: Clean stage area
+  ansible.builtin.file:
+    path: "{{ stage_dir }}"
+    state: absent
+  when:
+    - stage_dir != "/"
+  tags:
+    - never
+    - clean_stage
+
+- name: Test requirements on nodes
+  import_tasks: nodes_prereq/test.yml
+  become: true
+  tags:
+    - never
+    - requirements_test
+
+- name: Unconditionally shut down the machine with all defaults
+  community.general.shutdown:
+    msg: "Good Night ClusterPi!"
+  tags:
+    - never
+    - shutdown

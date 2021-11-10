@@ -1,0 +1,23 @@
+---
+# tasks file for role-clusterpi
+
+# Load needed environment vars (please create your own)
+- name: Load "{{ cluster_environment }}" needed vars
+  include_vars: "{{ cluster_environment }}.yml"
+  when:
+  - cluster_environment is defined   
+
+# Ensure stage dir
+- name: Ensure dir for inventory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ stage_dir }}/"
+
+# Create inventory
+- name: Prepare an ansible inventory for nodes management
+  ansible.builtin.template:
+    src: inventory.yml.j2
+    dest: "{{ stage_dir }}/inventory.yml"

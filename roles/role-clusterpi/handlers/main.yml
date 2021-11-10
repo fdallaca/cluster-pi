@@ -1,22 +1,33 @@
 ---
-# handlers file for role-prep_pi_images
+# handlers file for role-clusterpi
 
-# [ prepare_images ] Handlers
+- name: Reboot
+  ansible.builtin.reboot:
+  become: true
+  listen:
+  - updated
 
-- name: Umount loop devices
-  loop: "{{ mounted_partitions.results | selectattr('changed', 'equalto', true) | map(attribute='name') | list }}"
-  mount:
-    path: "{{ item }}"
-    state: absent
-  listen: umount_loop_devices
+- name: Restart service netfilter-persistent
+  ansible.builtin.systemd:
+    name: netfilter-persistent
+    state: restarted
+  become: true
+  listen:
+  - firewall
 
-- name: Destroy loop device
-  loop: "{{ loop_devices.results | selectattr('changed', 'equalto', true) | map(attribute='stdout') | list }}"
-  command:
-    argv:
-      - losetup
-      - -d
-      - "{{ item }}"
-  listen: destroy_loop_devices
+- name: Restart service docker
+  ansible.builtin.systemd:
+    name: docker.service
+    state: restarted
+  become: true
+  listen:
+  - firewall
+  - docker
 
-###
+- name: Restart service kubelet
+  ansible.builtin.systemd:
+    name: kubelet.service
+    state: restarted
+  become: true
+  listen:
+  - kubelet

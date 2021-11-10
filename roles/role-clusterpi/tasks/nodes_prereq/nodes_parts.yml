@@ -1,0 +1,99 @@
+---
+
+# Load needed environment vars (please create your own)
+- name: Load "{{ cluster_environment }}" needed vars
+  include_vars: "{{ cluster_environment }}.yml"
+  when:
+  - cluster_environment is defined   
+
+- name: Read partitioning
+  community.general.parted:
+    device: "{{ sd_device }}"
+    unit: "GiB"
+    state: "info"
+  register: sd_device_info
+
+- name: Debug device info
+  debug:
+    var: sd_device_info
+
+# For masters use etcd_size_gib
+- name: masters | Set third partition size
+  set_fact:
+    third_part_size: "{{ etcd_size_gib }}"
+  when: "'masters' in group_names"
+    
+# For workers use pv_size_parts
+- name: workers | Set third partition size
+  set_fact:
+    third_part_size: "{{ pv_size_gib }}"
+  when: "'workers' in group_names"
+
+- name: Create third partition
+  community.general.parted:
+    device: "{{ sd_device }}"
+    number: 3
+    part_start: "-{{ third_part_size }}GiB"
+    part_end: "100%"
+    state: present
+  when:
+    - sd_device_info.partitions | length < 3 
+
+- name: Enlarge second partition
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/growpart
+      - "{{ sd_device }}"
+      - 2
+  register: command_output
+  changed_when: false
+  failed_when: "'NOCHANGE' not in command_output.stdout"
+
+- name: sdcard | Adapt fs on second partition
+  community.general.filesystem:
+    dev: "{{ sd_device }}p2"
+    fstype: ext4
+    resizefs: true
+  when: sd_device == "/dev/mmcblk0"
+
+- name: usb | Adapt fs on second partition
+  community.general.filesystem:
+    dev: "{{ sd_device }}2"
+    fstype: ext4
+    resizefs: true
+  when: sd_device == "/dev/sda"
+
+- name: sdcard | Create an xfs on third partition
+  community.general.filesystem:
+    dev: "{{ sd_device }}p3"
+    fstype: xfs
+  when: sd_device == "/dev/mmcblk0"
+
+- name: sdcard | Create an xfs on third partition
+  community.general.filesystem:
+    dev: "{{ sd_device }}3"
+    fstype: xfs
+  when: sd_device == "/dev/sda"
+
+- name: Refresh device facts
+  ansible.builtin.setup:
+    filter:
+      - 'ansible_device_links'
+
+- name: sdcard | Permanent mount third partition
+  ansible.posix.mount:
+    path: /kubestoragesd
+    src: "UUID={{ ansible_device_links.uuids.mmcblk0p3[0] }}"
+    opts: "defaults,noatime,nodiratime,allocsize=64m"
+    state: mounted
+    fstype: xfs
+  when: sd_device == "/dev/mmcblk0"
+
+- name: usb | Permanent mount third partition
+  ansible.posix.mount:
+    path: /kubestoragesd
+    src: "UUID={{ ansible_device_links.uuids.sda3[0] }}"
+    opts: "defaults,noatime,nodiratime,allocsize=64m"
+    state: mounted
+    fstype: xfs
+  when: sd_device == "/dev/sda"

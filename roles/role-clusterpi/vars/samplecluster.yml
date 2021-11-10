@@ -1,0 +1,35 @@
+---
+# vars file for a sample cluster environment
+
+stage_dir: "/public/clusterpi"
+
+# [ Required variables ]
+cluster_nodenumber: 4
+master_nodenumber: 1 # Used only for group nodes in inventory...
+cluster_name: clusterpi
+cluster_cidr_firstip: 10.100.1.65/24
+cluster_gateway: 10.100.1.1
+
+
+# [ Suggested (but defaulted) variables ]
+# Password for clusterpi user (you can use ansible-vault here)
+cluster_adm_pwd: changeme
+# Some useful keys (It's an array)
+cluster_ssh_auth_keys:
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDSEE30dsro6pKFwHZn35Ob8uenssNCbTSwThQEzYz76lS12RLj/QNgnlt/l1khRHUh4+mo/UGlYAW6u2BRt4XVb1KVQtz/2rAHH1QDDqMza1qS12vfHwsvfLdk7FHeEmFDOwi+4JZ0bmvVuFCK53qiee5iRM8+LTl5szNcUUE+tpt/6QDlOMNYVr1IpObp6XiYLFhwYdWFcrJxsKWmXxtk1tzYpHQIhzBgcIyXEbRxyxGQmQwr8xdO4o4iKll+K/n/YbryrgIMki4fhaid158QlAU+NeYVk5iUMqsVAs35wgfSrDLaI4z+wFS/vT2K3N4tDOsvvcmbro9MhRtw83sSFwPBluGKU2j9tOWukDlzLaZ7j6SnIraQQAYz5wzMYakDOCRB9dvHU6QcZd3rGGDrqfaIRFmntbBSZj3DZ/BCMUCg0g4RYeIADnMb99d/HFMdMdOjtZAiKCUnP5EY/r1mVLc6zCo3JVqPRKtSjDEINUGxxDDD2UVQa5DEOE+31gk= cin0258a@lenovot14s"
+# Keyboard...
+cluster_console_keyboard: it
+# Other "cluster_" variables in defaults... (If you wanna change more, put here your setting for override)
+
+# Image path used as: {{ images_in_path}}/{{ pios64_image.path }} (see defaults/main.yml)
+images_in_path: "/public/clusterpi"
+
+# Decomment if you want custom or automated custom partitioning (see default variables)
+#partitioning: true
+# Decomment if you want use usb storage
+#usb_storage: true
+#sd_device: "/dev/sda"
+#
+
+# Fix kube* version
+k8s_version: "1.22.3-00"
