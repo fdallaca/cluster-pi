@@ -1,0 +1,33 @@
+---
+# handlers file for role-clusterpi
+
+- name: Reboot
+  ansible.builtin.reboot:
+  become: true
+  listen:
+  - updated
+
+- name: Restart service netfilter-persistent
+  ansible.builtin.systemd:
+    name: netfilter-persistent
+    state: restarted
+  become: true
+  listen:
+  - firewall
+
+- name: Restart service docker
+  ansible.builtin.systemd:
+    name: docker.service
+    state: restarted
+  become: true
+  listen:
+  - firewall
+  - docker
+
+- name: Restart service kubelet
+  ansible.builtin.systemd:
+    name: kubelet.service
+    state: restarted
+  become: true
+  listen:
+  - kubelet

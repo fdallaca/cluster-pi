@@ -1,0 +1,19 @@
+---
+#tasks file for role-clusterpi
+
+- name: Start a container with a command
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - --rm
+      - --privileged 
+      - -v
+      - /dev:/dev
+      - -v
+      - "{{ stage_dir }}/{{ cluster_nodenumber_item }}:/build"
+      - -v
+      - "{{ images_in_path }}:/image"
+      - mkaczanowski/packer-builder-arm
+      - build
+      - "/build/{{ pios64_image.packer_template | replace('.j2','') }}"

@@ -1,0 +1,9 @@
+---
+# Playbook for node img preparation
+
+- hosts: masters:workers
+
+  tasks:
+  - name: Cluster pi nodes configurator
+    import_role:
+      name: role-clusterpi

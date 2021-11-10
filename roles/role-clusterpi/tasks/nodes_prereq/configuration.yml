@@ -1,0 +1,102 @@
+---
+
+# Load needed environment vars (please create your own)
+- name: Load "{{ cluster_environment }}" needed vars
+  include_vars: "{{ cluster_environment }}.yml"
+  when:
+  - cluster_environment is defined
+  tags:
+    - firewall
+
+# Modules and kernel parameter
+- name: Keep permanent some modules on boot
+  ansible.builtin.template:
+    src: k8s.conf.j2
+    dest: /etc/modules-load.d/k8s.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Load brfilter module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: brfilter ipv6
+  ansible.posix.sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: '1'
+    state: present
+
+- name: brfilter ipv4
+  ansible.posix.sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: '1'
+    state: present
+
+# Firewall
+# Tags activable activities (tag: "firewall")
+
+# master/workers particular cases
+- name: masters | Set proper firewall ruleset
+  set_fact: 
+    k8s_fw_rules: "{{ k8s_masters_fw_rules }}"
+  when: "'masters' in group_names"
+  tags:
+  - firewall
+
+- name: workers | Set proper firewall ruleset
+  set_fact:
+    k8s_fw_rules: "{{ k8s_workers_fw_rules }}"
+  when: "'workers' in group_names"
+  tags:
+  - firewall
+
+# Rules
+- name: Set rules in zone public
+  ansible.builtin.template:
+    # src: nftables.conf.j2
+    # dest: /etc/nftables.conf
+    src: iptables.rules.v4.j2
+    dest: /etc/iptables/rules.v4
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+  - firewall
+  tags:
+  - firewall
+
+- name: Restart fw if configuration changed
+  meta: flush_handlers
+
+# Install kubernetes component and hold them
+- name: Add Google Kubernetes Apt signing key
+  ansible.builtin.apt_key:
+    keyring: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Add Google Kubernetes Apt repository
+  ansible.builtin.apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: kubernetes
+
+- name: Install k8s packages
+  ansible.builtin.apt:
+    state: present
+    name: "{{ item }}={{ k8s_version }}"
+    update_cache: true
+    autoclean: true
+    autoremove: true   
+  loop: "{{ k8s_packages }}"
+
+- name: Hold k8s packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ k8s_packages }}"
+
+- name: Kubectl completion script
+  ansible.builtin.shell: "/usr/bin/kubectl completion bash >/etc/bash_completion.d/kubectl"

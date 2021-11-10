@@ -1,0 +1,17 @@
+all:
+  children:
+    masters:
+      hosts:
+        {% for index in range(cluster_nodenumber) %}{% if index < master_nodenumber %}{{ cluster_name }}{{ '%02d' % (index) }}:
+          ansible_host: {{ cluster_cidr_firstip | ansible.netcommon.ipmath((index) | int ) }}
+        {% endif %}{% endfor %}
+
+    {% if cluster_nodenumber > master_nodenumber %}workers:
+      hosts:
+        {% for index in range(cluster_nodenumber) %}{% if index >= master_nodenumber %}{{ cluster_name }}{{ '%02d' % (index) }}:
+          ansible_host: {{ cluster_cidr_firstip | ansible.netcommon.ipmath((index) | int ) }}
+        {% endif %}{% endfor %}
+    {% endif %}
+
+  vars:
+    ansible_user: {{ cluster_adm_user }}

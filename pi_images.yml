@@ -1,0 +1,9 @@
+---
+# Playbook for node img preparation
+
+- hosts: localhost
+
+  tasks:
+  - name: clusterpi imager playbook
+    import_role:
+      name: role-clusterpi
