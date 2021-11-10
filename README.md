@@ -47,7 +47,7 @@ Software tooling to create your K8S Pi cluster.
   (venv) $ ansible-playbook cluster-pi/pi_images.yml -e '{cluster_environment: "yourcluster"}' --tags prepare_images
   ```
   
-  Image produce nodes in storage unpartitioned. For usb and custom partitioning support see [here](./roles/role-clusterpi/README.md#Disk-related-variables)
+  Image produce nodes with default base image partition. For usb and custom partitioning support see [here](./roles/role-clusterpi/README.md#Disk-related-variables)
 
   At this phase are already prepared an ansible inventory at `stage_dir` root (useful to automate future operations on nodes).
 
